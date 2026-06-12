@@ -1,0 +1,241 @@
+from evdev import InputDevice, ecodes
+import pygame
+import RPi.GPIO as GPIO
+import threading
+import time
+
+# =====================================
+# PINS
+# =====================================
+
+SERVO_PIN = 18
+ESC_PIN = 19
+
+# =====================================
+# GPIO SETUP
+# =====================================
+
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setup(SERVO_PIN, GPIO.OUT)
+GPIO.setup(ESC_PIN, GPIO.OUT)
+
+servo = GPIO.PWM(SERVO_PIN, 50)
+servo.start(0)
+
+esc = GPIO.PWM(ESC_PIN, 50)
+esc.start(0)
+
+# =====================================
+# SERVO FUNCTIONS
+# =====================================
+
+def set_angle(angle):
+
+    duty = 2.5 + (angle / 18.0)
+
+    servo.ChangeDutyCycle(duty)
+    time.sleep(0.05)
+    servo.ChangeDutyCycle(0)
+
+# =====================================
+# ESC FUNCTIONS
+# =====================================
+
+MIN_DUTY = 5.0
+MAX_DUTY = 10.0
+
+def set_speed(percent):
+
+    percent = max(0, min(100, percent))
+
+    duty = MIN_DUTY + (
+        percent / 100.0
+    ) * (MAX_DUTY - MIN_DUTY)
+
+    esc.ChangeDutyCycle(duty)
+
+# =====================================
+# ARM ESC
+# =====================================
+
+print("Arming ESC...")
+
+set_speed(0)
+
+time.sleep(5)
+
+print("ESC Armed")
+
+# =====================================
+# CONTROLLER SETUP
+# =====================================
+
+pygame.init()
+pygame.joystick.init()
+
+if pygame.joystick.get_count() == 0:
+    print("No controller found")
+    quit()
+
+joystick = pygame.joystick.Joystick(0)
+joystick.init()
+
+print("Controller:", joystick.get_name())
+
+# evdev device
+dev = InputDevice('/dev/input/event4')
+
+# =====================================
+# SERVO VARIABLES
+# =====================================
+
+angle = 90
+last_angle = angle
+
+SERVO_DEADZONE = 0.30
+SERVO_STEP = 5
+
+set_angle(angle)
+
+# =====================================
+# THROTTLE VARIABLES
+# =====================================
+
+CENTER = 128
+THROTTLE_DEADZONE = 25
+
+target_throttle = 0.0
+current_throttle = 0.0
+
+# =====================================
+# THROTTLE THREAD
+# =====================================
+
+def throttle_loop():
+
+    global current_throttle
+
+    while True:
+
+        current_throttle += (
+            target_throttle - current_throttle
+        ) * 0.02
+
+        set_speed(current_throttle)
+
+        time.sleep(0.02)
+
+threading.Thread(
+    target=throttle_loop,
+    daemon=True
+).start()
+
+# =====================================
+# EVDEV THREAD
+# =====================================
+
+def throttle_input_loop():
+
+    global target_throttle
+    global current_throttle
+
+    for event in dev.read_loop():
+
+        # Left stick Y = throttle
+
+        if (
+            event.type == ecodes.EV_ABS
+            and event.code == 1
+        ):
+
+            value = event.value
+
+            if abs(value - CENTER) < THROTTLE_DEADZONE:
+
+                target_throttle = 0
+
+            else:
+
+                if value < CENTER:
+
+                    target_throttle = (
+                        (CENTER - value)
+                        / CENTER
+                    ) * 100
+
+                else:
+
+                    target_throttle = 0
+
+        # A button = brake
+
+        elif (
+            event.type == ecodes.EV_KEY
+            and event.code == 304
+            and event.value == 1
+        ):
+
+            target_throttle = 0
+            current_throttle = 0
+
+            set_speed(0)
+
+            print("\nBRAKE")
+
+threading.Thread(
+    target=throttle_input_loop,
+    daemon=True
+).start()
+
+# =====================================
+# MAIN LOOP (SERVO)
+# =====================================
+
+print("\nControls")
+print("Left Stick X = Steering")
+print("Left Stick Y = Throttle")
+print("A Button = Brake")
+
+try:
+
+    while True:
+
+        pygame.event.pump()
+
+        x = joystick.get_axis(0)
+
+        if abs(x) < SERVO_DEADZONE:
+            x = 0
+
+        angle = int((x + 1) * 90)
+
+        if abs(angle - last_angle) >= SERVO_STEP:
+
+            set_angle(angle)
+
+            last_angle = angle
+
+        print(
+            f"Steering:{angle:3d}°  "
+            f"Throttle:{current_throttle:5.1f}%   ",
+            end="\r"
+        )
+
+        time.sleep(0.05)
+
+except KeyboardInterrupt:
+    pass
+
+finally:
+
+    print("\nStopping...")
+
+    set_speed(0)
+
+    time.sleep(1)
+
+    servo.stop()
+    esc.stop()
+
+    GPIO.cleanup()
