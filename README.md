@@ -194,7 +194,7 @@ The developed RC car successfully demonstrates:
 
 ### Circuit Diagram
 
-![Circuit Diagram](images/circuit_diagram.png)
+![Circuit Diagram](images/EE2F87BD-47CE-4A61-B5A4-1DB9C77B4F8B.png)
 
 ---
 
