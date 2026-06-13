@@ -202,7 +202,7 @@ The developed RC car successfully demonstrates:
 
 **Varun Bhandary**
 
-Bachelor of Engineering (Electronics and Communication Engineering)
+Bachelor of Engineering (Robotics and Automation Engineering)
 
 Project Title: **Brushless DC Motor RC Car with Ackermann Steering and Wireless Joystick Control using Raspberry Pi**
 
