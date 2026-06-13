@@ -182,7 +182,7 @@ The developed RC car successfully demonstrates:
 
 ### Hardware Components
 
-![Hardware Components](images/hardware_setup.png)
+![Hardware Components](images/91EEA49E-2CBC-48B5-8C38-907F5D2E2EA7.png)
 
 ### System Architecture
 
