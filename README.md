@@ -190,7 +190,7 @@ The developed RC car successfully demonstrates:
 
 ### Methodology
 
-![Methodology](images/methodology.png)
+![Methodology](images/E82B97D0-BBF6-4501-8CC4-F752B1EEA861.png)
 
 ### Circuit Diagram
 
