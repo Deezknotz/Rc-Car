@@ -186,7 +186,7 @@ The developed RC car successfully demonstrates:
 
 ### System Architecture
 
-![System Architecture](images/system_architecture.png)
+![System Architecture](images/D5876262-7CE0-47B5-9499-82705FF432E4.png)
 
 ### Methodology
 
